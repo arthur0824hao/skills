@@ -123,6 +123,11 @@ export PGDATABASE=agent_memory
 export PGUSER=postgres
 ```
 
+Shell copy/paste safety:
+
+- Avoid copying inline markdown backticks (e.g. `semantic`) into your shell. In zsh, backticks are command substitution.
+- Prefer using the wrapper scripts (`scripts/mem.sh`, `scripts/mem.ps1`) or copy from fenced code blocks.
+
 ### One-time setup helper scripts
 
 This skill ships helper scripts (relative paths):
@@ -172,6 +177,48 @@ SELECT store_memory(
     9.0
 );
 ```
+
+### Wrapper: `scripts/mem.sh` / `scripts/mem.ps1` (recommended)
+
+These wrappers reduce enum/quoting mistakes:
+
+```bash
+# show allowed enum values
+bash "scripts/mem.sh" types
+
+# search
+bash "scripts/mem.sh" search "pgvector windows install" 5
+
+# store (content via stdin)
+printf '%s' "Steps: ..." | bash "scripts/mem.sh" store semantic project "pgvector install" "postgres,pgvector,windows" 8
+```
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts\mem.ps1" types
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts\mem.ps1" search "pgvector windows install" 5
+"Steps: ..." | powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts\mem.ps1" store semantic project "pgvector install" "postgres,pgvector,windows" 8
+```
+
+## Visualize Memories (Markdown export)
+
+If querying PostgreSQL is too inconvenient for daily use, you can export memories into markdown files under `./Memory/` (current directory by default):
+
+```bash
+bash "<skill-dir>/scripts/sync_memory_to_md.sh" --out-dir "./Memory"
+```
+
+Outputs:
+
+- `Memory/Long.md` (semantic + procedural)
+- `Memory/Short.md` (friction + compaction-daily + procedural highlights)
+- `Memory/Episodic.md` (episodic)
+
+Backups:
+
+- Backups are stored under `Memory/.backups/` to avoid noisy `git status`.
+- Use `--no-backup` to disable.
+
+The sync script will also create `Memory/.gitignore` if it doesn't exist (ignores `.backups/` and `SYNC_STATUS.txt`).
 
 ### `search_memories(query, types[], categories[], tags[], agent_id, min_importance, limit)`
 
