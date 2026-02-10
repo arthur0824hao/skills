@@ -1,6 +1,6 @@
 ---
 name: skill-system-postgres
-description: Use when you need a Postgres-backed state store for a Router-based skill system (task specs, policy profiles, runs, events, artifacts) across Windows and Linux.
+description: "Postgres-backed observability and policy store for the skill system. Provides tables for policy profiles (effect allowlists), skill execution runs, and step-level events. Use when setting up the skill system database or querying execution history."
 license: MIT
 compatibility: opencode
 metadata:
@@ -10,39 +10,26 @@ metadata:
 
 # Skill System (Postgres State)
 
-This skill defines the database schema for a Router-driven skill system.
+Database schema for skill system observability and policy.
 
-It is intentionally small:
-
-- Task specs live in Postgres (referenced by DB row id)
-- Policy profiles (allowlist-first) live in Postgres
-- Router runs write events + artifacts for observability and replay
-
-## Install / Apply Schema
-
-The schema is created by `init.sql` in this directory.
-
-Linux/macOS:
+## Install
 
 ```bash
 psql -U postgres -d agent_memory -v ON_ERROR_STOP=1 -f init.sql
 ```
 
-Windows (adjust the path to `psql.exe`):
-
 ```powershell
 & "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -d agent_memory -v "ON_ERROR_STOP=1" -f init.sql
 ```
 
-## Data Model (MVP)
+For existing v1 installations, also run `migrate-v2.sql`.
 
-- `skill_system.policy_profiles`: allowlists for effects/exec/write-roots
-- `skill_system.task_specs`: Router inputs (goal/workspace/inputs/verification/pinned_pipeline/budgets)
-- `skill_system.runs`: execution records with an effective policy snapshot
-- `skill_system.run_events`: JSON events for observability
-- `skill_system.artifacts`: output file references and metadata
+## Tables
 
-## Notes
+- `skill_system.policy_profiles` — effect allowlists (what skills are allowed to do)
+- `skill_system.runs` — execution records (goal, agent, status, duration, metrics)
+- `skill_system.run_events` — step-level event log (which skill, which op, result)
 
-- This skill does not run anything by itself.
-- Use it together with the Router skill that reads `task_specs` and executes a pinned pipeline.
+## Usage
+
+The Agent writes to these tables as instructed by the Router skill. This skill does not execute anything — it's a state store.

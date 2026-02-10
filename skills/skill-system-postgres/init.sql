@@ -1,7 +1,3 @@
--- Skill System (Postgres) - state schema for Router-driven skill execution.
---
--- This file is designed to be safe to re-run.
-
 BEGIN;
 
 CREATE SCHEMA IF NOT EXISTS skill_system;
@@ -30,21 +26,12 @@ CREATE TABLE IF NOT EXISTS skill_system.policy_profiles (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS skill_system.task_specs (
-  id BIGSERIAL PRIMARY KEY,
-  goal TEXT NOT NULL,
-  workspace JSONB NOT NULL DEFAULT '{}'::jsonb,
-  inputs JSONB NOT NULL DEFAULT '{}'::jsonb,
-  verification JSONB NOT NULL DEFAULT '{}'::jsonb,
-  pinned_pipeline JSONB NOT NULL DEFAULT '[]'::jsonb,
-  budgets JSONB NOT NULL DEFAULT '{}'::jsonb,
-  policy_profile_id BIGINT NULL REFERENCES skill_system.policy_profiles(id) ON DELETE SET NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
 CREATE TABLE IF NOT EXISTS skill_system.runs (
   id BIGSERIAL PRIMARY KEY,
-  task_spec_id BIGINT NOT NULL REFERENCES skill_system.task_specs(id) ON DELETE CASCADE,
+  goal TEXT,
+  agent_id TEXT,
+  policy_profile_id BIGINT REFERENCES skill_system.policy_profiles(id) ON DELETE SET NULL,
+  task_spec_id BIGINT,
   status skill_system.run_status NOT NULL DEFAULT 'queued',
   started_at TIMESTAMPTZ NULL,
   ended_at TIMESTAMPTZ NULL,
@@ -63,18 +50,8 @@ CREATE TABLE IF NOT EXISTS skill_system.run_events (
   payload JSONB NOT NULL DEFAULT '{}'::jsonb
 );
 
-CREATE TABLE IF NOT EXISTS skill_system.artifacts (
-  id BIGSERIAL PRIMARY KEY,
-  run_id BIGINT NOT NULL REFERENCES skill_system.runs(id) ON DELETE CASCADE,
-  kind TEXT NOT NULL,
-  path TEXT NOT NULL,
-  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_task_specs_policy_profile_id ON skill_system.task_specs(policy_profile_id);
-CREATE INDEX IF NOT EXISTS idx_runs_task_spec_id ON skill_system.runs(task_spec_id);
+CREATE INDEX IF NOT EXISTS idx_runs_agent_id ON skill_system.runs(agent_id) WHERE agent_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_runs_status ON skill_system.runs(status);
 CREATE INDEX IF NOT EXISTS idx_run_events_run_id ON skill_system.run_events(run_id);
-CREATE INDEX IF NOT EXISTS idx_artifacts_run_id ON skill_system.artifacts(run_id);
 
 COMMIT;

@@ -205,32 +205,74 @@ If you use a Router skill that executes pinned pipelines, it can read a manifest
 
 For portability, the manifest block is fenced as YAML but the content is JSON (valid YAML). The Router parses it.
 
-```router-manifest
+```skill-manifest
 {
+  "schema_version": "2.0",
   "id": "skill-system-memory",
-  "version": "0.1.0",
+  "version": "0.2.0",
+  "capabilities": ["memory-search", "memory-store", "memory-health", "memory-types"],
   "effects": ["proc.exec", "db.read", "db.write"],
-  "entrypoints": {
-    "mem.types": {
-      "unix": ["bash", "scripts/router_mem.sh", "types"],
-      "windows": ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\\router_mem.ps1", "types"]
+  "operations": {
+    "search": {
+      "description": "Search memories by natural language query. Returns ranked results with relevance scores.",
+      "input": {
+        "query": { "type": "string", "required": true, "description": "Natural language search query" },
+        "limit": { "type": "integer", "required": false, "default": 5, "description": "Max results" }
+      },
+      "output": {
+        "description": "Array of memory matches with id, title, content, relevance_score",
+        "fields": { "status": "ok | error", "data": "array of {id, title, content, relevance_score}" }
+      },
+      "entrypoints": {
+        "unix": ["bash", "scripts/router_mem.sh", "search", "{query}", "{limit}"],
+        "windows": ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\\router_mem.ps1", "search", "{query}", "{limit}"]
+      }
     },
-    "mem.health": {
-      "unix": ["bash", "scripts/router_mem.sh", "health"],
-      "windows": ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\\router_mem.ps1", "health"]
+    "store": {
+      "description": "Store a new memory. Auto-deduplicates by content hash.",
+      "input": {
+        "memory_type": { "type": "string", "required": true, "description": "One of: semantic, episodic, procedural, working" },
+        "category": { "type": "string", "required": true, "description": "Category name" },
+        "title": { "type": "string", "required": true, "description": "One-line summary" },
+        "tags_csv": { "type": "string", "required": true, "description": "Comma-separated tags" },
+        "importance": { "type": "integer", "required": true, "description": "1-10 importance score" }
+      },
+      "output": {
+        "description": "Confirmation with stored memory id",
+        "fields": { "status": "ok | error", "id": "integer" }
+      },
+      "entrypoints": {
+        "unix": ["bash", "scripts/router_mem.sh", "store", "{memory_type}", "{category}", "{title}", "{tags_csv}", "{importance}"],
+        "windows": ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\\router_mem.ps1", "store", "{memory_type}", "{category}", "{title}", "{tags_csv}", "{importance}"]
+      }
     },
-    "mem.search": {
-      "unix": ["bash", "scripts/router_mem.sh", "search", "{query}", "{limit}"],
-      "windows": ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\\router_mem.ps1", "search", "{query}", "{limit}"]
+    "health": {
+      "description": "Check memory system health: total count, average importance, stale count.",
+      "input": {},
+      "output": {
+        "description": "Health metrics",
+        "fields": { "status": "ok | error", "data": "array of {metric, value, status}" }
+      },
+      "entrypoints": {
+        "unix": ["bash", "scripts/router_mem.sh", "health"],
+        "windows": ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\\router_mem.ps1", "health"]
+      }
     },
-    "mem.store": {
-      "unix": ["bash", "scripts/router_mem.sh", "store", "{memory_type}", "{category}", "{title}", "{tags_csv}", "{importance}"],
-      "windows": ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\\router_mem.ps1", "store", "{memory_type}", "{category}", "{title}", "{tags_csv}", "{importance}"]
+    "types": {
+      "description": "List available memory types and their descriptions.",
+      "input": {},
+      "output": {
+        "description": "Memory type definitions",
+        "fields": { "status": "ok | error", "data": "array of {type, lifespan, description}" }
+      },
+      "entrypoints": {
+        "unix": ["bash", "scripts/router_mem.sh", "types"],
+        "windows": ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\\router_mem.ps1", "types"]
+      }
     }
   },
   "stdout_contract": {
-    "last_line_json": true,
-    "schema_version": "1.0"
+    "last_line_json": true
   }
 }
 ```
@@ -433,12 +475,12 @@ If you're using OpenCode, prefer the OpenCode plugin route for automatic compact
 
 ### OpenCode plugin (experimental.session.compacting)
 
-1) Copy `plugins/agent-memory-systems-postgres.js` to `~/.config/opencode/plugins/`
+1) Copy `plugins/skill-system-memory.js` to `~/.config/opencode/plugins/`
 2) Restart OpenCode
 
 It writes local compaction events to:
 
-- `~/.config/opencode/agent-memory-systems-postgres/compaction-events.jsonl`
+- `~/.config/opencode/skill-system-memory/compaction-events.jsonl`
 
 And will also attempt a best-effort Postgres `store_memory(...)` write (requires pgpass).
 
