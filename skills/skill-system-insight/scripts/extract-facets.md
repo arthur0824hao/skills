@@ -25,8 +25,16 @@ If the count is >= 3:
 
 ## Step 1: Load the session
 
-- Read the full session transcript (messages + tool outputs).
-- Collect the session metadata: `session_id`, `timestamp`, `user`.
+Retrieve the session using available tooling:
+
+- **OpenCode**: Use `session_list` to find sessions, then `session_read(session_id=...)` to load transcript.
+- **Claude Code**: Use `/insights` or read from `~/.claude/projects/` session files.
+- **Other**: Accept `session_id` as input parameter if transcript is provided directly.
+
+Collect the session metadata:
+- `session_id` — from the session tool or user input
+- `timestamp` — ISO 8601 UTC, use session's last message time
+- `user` — from AGENTS.md, session metadata, or ask
 
 ## Step 2: Run the facet extraction prompt
 
