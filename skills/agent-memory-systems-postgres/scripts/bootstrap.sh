@@ -28,22 +28,25 @@ yesno() {
 selected_pgpass="false"
 selected_ollama="false"
 selected_pgvector="false"
+selected_opencode_plugin="false"
 
 if [ "$install_all" = "--install-all" ]; then
   selected_pgpass="true"
   selected_ollama="true"
   selected_pgvector="true"
+  selected_opencode_plugin="true"
 else
   if yesno "Set up .pgpass for non-interactive psql?" y; then selected_pgpass="true"; fi
   if yesno "Install/use Ollama for local embeddings?" n; then selected_ollama="true"; fi
   if yesno "Enable pgvector extension (vector)?" n; then selected_pgvector="true"; fi
+  if yesno "Install OpenCode plugin for compaction logging?" n; then selected_opencode_plugin="true"; fi
 fi
 
 setup_file="$HOME/.config/opencode/agent-memory-systems-postgres/setup.json"
 mkdir -p "$(dirname "$setup_file")"
 
 cat > "$setup_file" <<EOF
-{"time_utc":"$(date -u +"%Y-%m-%dT%H:%M:%SZ")","os":"unix","selected":{"pgpass":$selected_pgpass,"ollama":$selected_ollama,"pgvector":$selected_pgvector}}
+{"time_utc":"$(date -u +"%Y-%m-%dT%H:%M:%SZ")","os":"unix","selected":{"pgpass":$selected_pgpass,"ollama":$selected_ollama,"pgvector":$selected_pgvector,"opencode_plugin":$selected_opencode_plugin}}
 EOF
 
 echo "Wrote setup record to $setup_file"
@@ -57,6 +60,20 @@ fi
 
 if [ "$selected_pgvector" = "true" ] && command -v psql >/dev/null 2>&1; then
   psql -w -h localhost -p 5432 -U postgres -d agent_memory -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null 2>&1 || true
+fi
+
+if [ "$selected_opencode_plugin" = "true" ]; then
+  src_dir="$(cd "$(dirname "$0")/.." && pwd)"
+  src="$src_dir/plugins/agent-memory-systems-postgres.js"
+  dst_dir="$HOME/.config/opencode/plugins"
+  mkdir -p "$dst_dir"
+  if [ -f "$src" ]; then
+    cp -f "$src" "$dst_dir/agent-memory-systems-postgres.js"
+    echo "Installed OpenCode plugin to $dst_dir/agent-memory-systems-postgres.js"
+    echo "Restart OpenCode to load plugin"
+  else
+    echo "Plugin source not found: $src" >&2
+  fi
 fi
 
 exit 0

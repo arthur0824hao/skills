@@ -45,6 +45,8 @@ Notes:
 
 Run the bootstrap script to choose optional components (pgpass, local embeddings, pgvector) and record decisions.
 
+Bootstrap can also optionally install the OpenCode compaction logging plugin (it will copy the plugin into your OpenCode plugins directory).
+
 Windows:
 
 ```powershell
@@ -74,8 +76,15 @@ On Windows, pgvector installation follows the official pgvector instructions (Vi
 
 If you want automatic compaction logging, install the OpenCode plugin template shipped with this skill.
 
+Option A (recommended): run bootstrap and choose the plugin option.
+
 1) Copy `plugins/agent-memory-systems-postgres.js` to `~/.config/opencode/plugins/`
 2) Restart OpenCode
+
+Uninstall:
+
+- Remove `~/.config/opencode/plugins/agent-memory-systems-postgres.js`
+- Restart OpenCode
 
 ## Credentials (psql)
 

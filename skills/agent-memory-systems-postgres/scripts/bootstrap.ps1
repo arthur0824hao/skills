@@ -47,6 +47,21 @@ function Write-SetupRecord {
   Write-Host "Wrote setup record to $path"
 }
 
+function Install-OpenCodePlugin {
+  param(
+    [Parameter(Mandatory = $true)][string]$PluginName,
+    [Parameter(Mandatory = $true)][string]$SourcePath
+  )
+
+  $dstDir = Join-Path $env:USERPROFILE '.config\opencode\plugins'
+  if (-not (Test-Path -LiteralPath $dstDir)) {
+    New-Item -ItemType Directory -Force -Path $dstDir | Out-Null
+  }
+  $dstPath = Join-Path $dstDir $PluginName
+  Copy-Item -LiteralPath $SourcePath -Destination $dstPath -Force
+  return $dstPath
+}
+
 $record = @{
   time_utc = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
   os = 'windows'
@@ -108,6 +123,20 @@ if ($wantPgvector) {
     $record.notes += 'pgvector installed+enabled'
   } catch {
     $record.notes += "pgvector setup failed: $($_.Exception.Message)"
+  }
+}
+
+$wantPlugin = $InstallAll -or (Prompt-YesNo -Question 'Install OpenCode plugin for compaction logging?' -DefaultYes $false)
+$record.selected.opencode_plugin = $wantPlugin
+if ($wantPlugin) {
+  try {
+    $src = Join-Path $PSScriptRoot '..\plugins\agent-memory-systems-postgres.js'
+    $src = (Resolve-Path -LiteralPath $src).Path
+    $dst = Install-OpenCodePlugin -PluginName 'agent-memory-systems-postgres.js' -SourcePath $src
+    $record.notes += "OpenCode plugin installed: $dst"
+    $record.notes += 'Restart OpenCode to load plugin'
+  } catch {
+    $record.notes += "plugin install failed: $($_.Exception.Message)"
   }
 }
 
