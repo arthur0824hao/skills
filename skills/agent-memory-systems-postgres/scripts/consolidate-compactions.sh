@@ -120,11 +120,10 @@ if command -v psql >/dev/null 2>&1; then
   for f in "$out_dir"/*.txt; do
     [ -f "$f" ] || continue
     day="$(basename "$f" .txt)"
+    day_sanitized="$(echo "$day" | tr -cd '0-9-')"
     content_b64="$(base64 < "$f" | tr -d '\n')"
-    psql -w -h "$pg_host" -p "$pg_port" -U "$pg_user" -d "$pg_db" -v ON_ERROR_STOP=1 \
-      -v "day=$day" \
-      -v "content_b64=$content_b64" \
-      -c "WITH payload AS (SELECT convert_from(decode(:'content_b64','base64'),'UTF8') AS content) SELECT store_memory('semantic','compaction-daily',ARRAY['compaction','daily'],'Compaction Daily Summary ' || :'day', (SELECT content FROM payload), jsonb_build_object('date_utc', :'day', 'source', 'consolidate-compactions.sh'), 'opencode-maintenance', NULL, 6.5);" \
+    sql="WITH payload AS (SELECT convert_from(decode('${content_b64}','base64'),'UTF8') AS content) SELECT store_memory('semantic','compaction-daily',ARRAY['compaction','daily'],'Compaction Daily Summary ${day_sanitized}', (SELECT content FROM payload), jsonb_build_object('date_utc', '${day_sanitized}', 'source', 'consolidate-compactions.sh'), 'opencode-maintenance', NULL, 6.5);"
+    psql -w -h "$pg_host" -p "$pg_port" -U "$pg_user" -d "$pg_db" -v ON_ERROR_STOP=1 -c "$sql" \
       >/dev/null 2>&1 || true
   done
 fi
