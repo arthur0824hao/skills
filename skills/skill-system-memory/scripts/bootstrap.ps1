@@ -39,7 +39,7 @@ function Write-SetupRecord {
   param(
     [Parameter(Mandatory = $true)][hashtable]$Record
   )
-  $path = Join-Path $env:USERPROFILE '.config\opencode\agent-memory-systems-postgres\setup.json'
+  $path = Join-Path $env:USERPROFILE '.config\opencode\skill-system-memory\setup.json'
   $dir = Split-Path -Parent $path
   if ($dir -and -not (Test-Path -LiteralPath $dir)) {
     New-Item -ItemType Directory -Path $dir -Force | Out-Null
@@ -73,9 +73,9 @@ $record = @{
 if ($PluginOnly) {
   $record.selected.opencode_plugin = $true
   try {
-    $src = Join-Path $PSScriptRoot '..\plugins\agent-memory-systems-postgres.js'
+    $src = Join-Path $PSScriptRoot '..\plugins\skill-system-memory.js'
     $src = (Resolve-Path -LiteralPath $src).Path
-    $dst = Install-OpenCodePlugin -PluginName 'agent-memory-systems-postgres.js' -SourcePath $src
+    $dst = Install-OpenCodePlugin -PluginName 'skill-system-memory.js' -SourcePath $src
     $record.notes += "OpenCode plugin installed: $dst"
     $record.notes += 'Restart OpenCode to load plugin'
   } catch {
@@ -148,9 +148,9 @@ $wantPlugin = $InstallAll -or (Prompt-YesNo -Question 'Install OpenCode plugin f
 $record.selected.opencode_plugin = $wantPlugin
 if ($wantPlugin) {
   try {
-    $src = Join-Path $PSScriptRoot '..\plugins\agent-memory-systems-postgres.js'
+    $src = Join-Path $PSScriptRoot '..\plugins\skill-system-memory.js'
     $src = (Resolve-Path -LiteralPath $src).Path
-    $dst = Install-OpenCodePlugin -PluginName 'agent-memory-systems-postgres.js' -SourcePath $src
+    $dst = Install-OpenCodePlugin -PluginName 'skill-system-memory.js' -SourcePath $src
     $record.notes += "OpenCode plugin installed: $dst"
     $record.notes += 'Restart OpenCode to load plugin'
   } catch {

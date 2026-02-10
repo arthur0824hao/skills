@@ -25,7 +25,7 @@ if [ -z "$MODEL" ]; then
 fi
 
 # If a setup record exists and ollama was selected, default to it.
-setup_json="$HOME/.config/opencode/agent-memory-systems-postgres/setup.json"
+setup_json="$HOME/.config/opencode/skill-system-memory/setup.json"
 if [ -z "${EMBEDDING_PROVIDER:-}" ] && [ -f "$setup_json" ]; then
   sel_ollama="$(jq -r '.selected.ollama // false' "$setup_json" 2>/dev/null || echo false)"
   if [ "$sel_ollama" = "true" ]; then

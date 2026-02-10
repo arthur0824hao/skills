@@ -6,9 +6,9 @@ import path from 'node:path'
 import os from 'node:os'
 
 /** @type {import('@opencode-ai/plugin').Plugin} */
-export const AgentMemorySystemsPostgres = async ({ $, directory, client }) => {
+export const SkillSystemMemory = async ({ $, directory, client }) => {
   const home = os.homedir()
-  const stateDir = path.join(home, '.config', 'opencode', 'agent-memory-systems-postgres')
+  const stateDir = path.join(home, '.config', 'opencode', 'skill-system-memory')
   const eventsPath = path.join(stateDir, 'compaction-events.jsonl')
   const setupPath = path.join(stateDir, 'setup.json')
 
@@ -65,7 +65,7 @@ export const AgentMemorySystemsPostgres = async ({ $, directory, client }) => {
     try {
       await client.tui.showToast({
         directory,
-        title: 'agent-memory-systems-postgres',
+        title: 'skill-system-memory',
         message: 'Optional setup not completed. Run bootstrap to enable pgpass/pgvector/Ollama and record setup.json.',
         variant: 'warning',
         duration: 8000,
@@ -95,7 +95,7 @@ export const AgentMemorySystemsPostgres = async ({ $, directory, client }) => {
         try {
           await client.tui.showToast({
             directory,
-            title: 'agent-memory-systems-postgres',
+            title: 'skill-system-memory',
             message: 'Setup selected pgvector=true but extension "vector" is not available (or psql auth failed).',
             variant: 'warning',
             duration: 8000,
@@ -113,7 +113,7 @@ export const AgentMemorySystemsPostgres = async ({ $, directory, client }) => {
         try {
           await client.tui.showToast({
             directory,
-            title: 'agent-memory-systems-postgres',
+            title: 'skill-system-memory',
             message: 'Setup selected ollama=true but http://localhost:11434 is not reachable.',
             variant: 'warning',
             duration: 8000,
@@ -149,14 +149,14 @@ export const AgentMemorySystemsPostgres = async ({ $, directory, client }) => {
       appendJsonl({ event: 'session.compacting', time_utc: nowUtc(), session_id: sessionID, cwd: directory })
 
       if (!hasSetup()) {
-        output.context.push(`## Setup Missing (agent-memory-systems-postgres)
+        output.context.push(`## Setup Missing (skill-system-memory)
 - Ask the user if they want to enable optional components: pgpass, pgvector, local embeddings (Ollama)
 - Record the choice by running the bootstrap script in the skill directory (writes setup.json)
 - Recommended: install all optional components, then fix any failures reported
 `)
       }
 
-      output.context.push(`## Memory System (agent-memory-systems-postgres)
+      output.context.push(`## Memory System (skill-system-memory)
 - Use store_memory(...) after solving non-obvious problems
 - Compaction is logged (local jsonl + optional Postgres write)
 `)
@@ -167,7 +167,7 @@ export const AgentMemorySystemsPostgres = async ({ $, directory, client }) => {
       if (event.type === 'session.compacted') {
         appendJsonl({ event: 'session.compacted', time_utc: nowUtc(), session_id: event.properties.sessionID, cwd: directory })
         try {
-          await client.app.log({ body: { service: 'agent-memory-systems-postgres', level: 'info', message: 'Session compacted (logged)' } })
+          await client.app.log({ body: { service: 'skill-system-memory', level: 'info', message: 'Session compacted (logged)' } })
         } catch {}
       }
     },

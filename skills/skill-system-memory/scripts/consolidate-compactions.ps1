@@ -20,7 +20,7 @@ function Resolve-PsqlPath {
   return $null
 }
 
-$opencodeDir = Join-Path $env:USERPROFILE '.config\opencode\agent-memory-systems-postgres'
+$opencodeDir = Join-Path $env:USERPROFILE '.config\opencode\skill-system-memory'
 $opencodeEvents = Join-Path $opencodeDir 'compaction-events.jsonl'
 $claudeEvents = Join-Path $env:USERPROFILE '.claude\compaction-events.jsonl'
 

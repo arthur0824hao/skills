@@ -1,5 +1,5 @@
 ---
-name: agent-memory-systems-postgres
+name: skill-system-memory
 description: Persistent shared memory for AI agents backed by PostgreSQL (fts + pg_trgm, optional pgvector). Includes compaction logging and maintenance scripts.
 license: MIT
 compatibility: opencode, claude-code
@@ -8,7 +8,7 @@ metadata:
   os: windows, linux, macos
 ---
 
-# Agent Memory Systems (PostgreSQL)
+# Skill System Memory (PostgreSQL)
 
 Persistent shared memory for all AI agents. PostgreSQL 14+ on Linux or Windows.
 Memory failures look like intelligence failures — this skill ensures the right memory is retrieved at the right time.
@@ -63,7 +63,7 @@ bash "scripts/bootstrap.sh"
 
 The selection record is stored at:
 
-- `~/.config/opencode/agent-memory-systems-postgres/setup.json`
+- `~/.config/opencode/skill-system-memory/setup.json`
 
 Agent rule:
 
@@ -78,12 +78,12 @@ If you want automatic compaction logging, install the OpenCode plugin template s
 
 Option A (recommended): run bootstrap and choose the plugin option.
 
-1) Copy `plugins/agent-memory-systems-postgres.js` to `~/.config/opencode/plugins/`
+1) Copy `plugins/skill-system-memory.js` to `~/.config/opencode/plugins/`
 2) Restart OpenCode
 
 Safety / rollback (if OpenCode gets stuck on startup):
 
-- Remove or rename `~/.config/opencode/plugins/agent-memory-systems-postgres.js`
+- Remove or rename `~/.config/opencode/plugins/skill-system-memory.js`
 - Restart OpenCode
 - Check logs:
   - macOS/Linux: `~/.local/share/opencode/log/`
@@ -96,7 +96,7 @@ Plugin behavior notes:
 
 Uninstall:
 
-- Remove `~/.config/opencode/plugins/agent-memory-systems-postgres.js`
+- Remove `~/.config/opencode/plugins/skill-system-memory.js`
 - Restart OpenCode
 
 ## Credentials (psql)
@@ -198,6 +198,47 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts\mem.ps1" types
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts\mem.ps1" search "pgvector windows install" 5
 "Steps: ..." | powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts\mem.ps1" store semantic project "pgvector install" "postgres,pgvector,windows" 8
 ```
+
+## Router Integration (optional)
+
+If you use a Router skill that executes pinned pipelines, it can read a manifest embedded in this `SKILL.md`.
+
+For portability, the manifest block is fenced as YAML but the content is JSON (valid YAML). The Router parses it.
+
+```router-manifest
+{
+  "id": "skill-system-memory",
+  "version": "0.1.0",
+  "effects": ["proc.exec", "db.read", "db.write"],
+  "entrypoints": {
+    "mem.types": {
+      "unix": ["bash", "scripts/router_mem.sh", "types"],
+      "windows": ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\\router_mem.ps1", "types"]
+    },
+    "mem.health": {
+      "unix": ["bash", "scripts/router_mem.sh", "health"],
+      "windows": ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\\router_mem.ps1", "health"]
+    },
+    "mem.search": {
+      "unix": ["bash", "scripts/router_mem.sh", "search", "{query}", "{limit}"],
+      "windows": ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\\router_mem.ps1", "search", "{query}", "{limit}"]
+    },
+    "mem.store": {
+      "unix": ["bash", "scripts/router_mem.sh", "store", "{memory_type}", "{category}", "{title}", "{tags_csv}", "{importance}"],
+      "windows": ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\\router_mem.ps1", "store", "{memory_type}", "{category}", "{title}", "{tags_csv}", "{importance}"]
+    }
+  },
+  "stdout_contract": {
+    "last_line_json": true,
+    "schema_version": "1.0"
+  }
+}
+```
+
+Notes:
+
+- The Router expects each step to print **last-line JSON**.
+- These Router adapter scripts are separate from `mem.sh` / `mem.ps1` to avoid breaking existing workflows.
 
 ## Visualize Memories (Markdown export)
 

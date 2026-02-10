@@ -42,7 +42,7 @@ else
   if yesno "Install OpenCode plugin for compaction logging?" n; then selected_opencode_plugin="true"; fi
 fi
 
-setup_file="$HOME/.config/opencode/agent-memory-systems-postgres/setup.json"
+setup_file="$HOME/.config/opencode/skill-system-memory/setup.json"
 mkdir -p "$(dirname "$setup_file")"
 
 cat > "$setup_file" <<EOF
@@ -64,12 +64,12 @@ fi
 
 if [ "$selected_opencode_plugin" = "true" ]; then
   src_dir="$(cd "$(dirname "$0")/.." && pwd)"
-  src="$src_dir/plugins/agent-memory-systems-postgres.js"
+  src="$src_dir/plugins/skill-system-memory.js"
   dst_dir="$HOME/.config/opencode/plugins"
   mkdir -p "$dst_dir"
   if [ -f "$src" ]; then
-    cp -f "$src" "$dst_dir/agent-memory-systems-postgres.js"
-    echo "Installed OpenCode plugin to $dst_dir/agent-memory-systems-postgres.js"
+    cp -f "$src" "$dst_dir/skill-system-memory.js"
+    echo "Installed OpenCode plugin to $dst_dir/skill-system-memory.js"
     echo "Restart OpenCode to load plugin"
   else
     echo "Plugin source not found: $src" >&2
