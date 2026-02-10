@@ -6,6 +6,7 @@ out_dir=""
 limit_long="200"
 limit_short="50"
 limit_episodic="200"
+limit_procedural="200"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -14,15 +15,18 @@ while [ $# -gt 0 ]; do
     --limit-long) limit_long="$2"; shift 2 ;;
     --limit-short) limit_short="$2"; shift 2 ;;
     --limit-episodic) limit_episodic="$2"; shift 2 ;;
+    --limit-procedural) limit_procedural="$2"; shift 2 ;;
     -h|--help)
       cat <<'EOF'
 Usage:
   scripts/sync_memory_to_md.sh [--out-dir DIR] [--no-backup] [--limit-long N] [--limit-short N] [--limit-episodic N]
+                          [--limit-procedural N]
 
 Outputs (in Memory/):
   - Long.md     (semantic + procedural)
   - Short.md    (friction + compaction-daily + skill-test + skill-publish)
   - Episodic.md (episodic)
+  - Procedural.md (procedural only)
 
 Backups:
   - default: Memory/.backups/<file>.<timestamp>.bak
@@ -102,7 +106,15 @@ write_md() {
   local out="$1"
   local sql="$2"
   backup_file "$out"
-  "${psql_cmd[@]}" -c "$sql" > "$out" 2>/dev/null
+  local err
+  err="$(mktemp)"
+  if ! "${psql_cmd[@]}" -c "$sql" > "$out" 2>"$err"; then
+    echo "psql failed while writing $out" >&2
+    tail -n 50 "$err" >&2 || true
+    rm -f "$err"
+    exit 1
+  fi
+  rm -f "$err"
 }
 
 common_fmt="
@@ -140,10 +152,43 @@ long_sql="WITH rows AS (
     AND m.memory_type IN ('semantic','procedural')
   ORDER BY m.importance_score DESC, m.accessed_at DESC
   LIMIT $limit_long
+),
+base AS (
+  SELECT m.*
+  FROM agent_memories m
+  WHERE m.deleted_at IS NULL
+    AND m.memory_type IN ('semantic','procedural')
+),
+cat AS (
+  SELECT category, count(*) AS c
+  FROM base
+  GROUP BY category
+  ORDER BY c DESC, category ASC
+  LIMIT 30
+),
+tag AS (
+  SELECT t AS tag, count(*) AS c
+  FROM base, unnest(COALESCE(base.tags, ARRAY[]::text[])) AS t
+  GROUP BY t
+  ORDER BY c DESC, t ASC
+  LIMIT 30
+),
+idx AS (
+  SELECT
+    '## Index' || E'\\n'
+    || '### Categories' || E'\\n'
+    || COALESCE((SELECT string_agg('- ' || category || ' (' || c::text || ')', E'\\n') FROM cat), '') || E'\\n'
+    || E'\\n'
+    || '### Tags' || E'\\n'
+    || COALESCE((SELECT string_agg('- ' || tag || ' (' || c::text || ')', E'\\n') FROM tag), '') || E'\\n'
+    || E'\\n'
+    || '## Memories' || E'\\n'
+    AS txt
 )
 SELECT
   (${header_expr})
   || '# Long' || E'\\n'
+  || (SELECT txt FROM idx)
   || COALESCE(string_agg((${common_fmt}), E'\\n'), '')
 FROM rows m;"
 
@@ -178,9 +223,24 @@ SELECT
   || COALESCE(string_agg((${common_fmt}), E'\\n'), '')
 FROM rows m;"
 
+procedural_sql="WITH rows AS (
+  SELECT m.*
+  FROM agent_memories m
+  WHERE m.deleted_at IS NULL
+    AND m.memory_type = 'procedural'
+  ORDER BY m.importance_score DESC, m.accessed_at DESC
+  LIMIT $limit_procedural
+)
+SELECT
+  (${header_expr})
+  || '# Procedural' || E'\\n'
+  || COALESCE(string_agg((${common_fmt}), E'\\n'), '')
+FROM rows m;"
+
 write_md "$mem_dir/Long.md" "$long_sql"
 write_md "$mem_dir/Short.md" "$short_sql"
 write_md "$mem_dir/Episodic.md" "$episodic_sql"
+write_md "$mem_dir/Procedural.md" "$procedural_sql"
 
 {
   echo "time_utc=$ts_utc"
@@ -190,9 +250,11 @@ write_md "$mem_dir/Episodic.md" "$episodic_sql"
   echo "long_limit=$limit_long"
   echo "short_limit=$limit_short"
   echo "episodic_limit=$limit_episodic"
+  echo "procedural_limit=$limit_procedural"
 } > "$status_file"
 
 echo "Wrote: $mem_dir/Long.md"
 echo "Wrote: $mem_dir/Short.md"
 echo "Wrote: $mem_dir/Episodic.md"
+echo "Wrote: $mem_dir/Procedural.md"
 echo "Status: $status_file"
