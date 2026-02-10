@@ -81,6 +81,19 @@ Option A (recommended): run bootstrap and choose the plugin option.
 1) Copy `plugins/agent-memory-systems-postgres.js` to `~/.config/opencode/plugins/`
 2) Restart OpenCode
 
+Safety / rollback (if OpenCode gets stuck on startup):
+
+- Remove or rename `~/.config/opencode/plugins/agent-memory-systems-postgres.js`
+- Restart OpenCode
+- Check logs:
+  - macOS/Linux: `~/.local/share/opencode/log/`
+  - Windows: `%USERPROFILE%\.local\share\opencode\log`
+
+Plugin behavior notes:
+
+- The plugin is designed to be a no-op unless you explicitly enabled it via bootstrap (`setup.json` sets `selected.opencode_plugin=true`).
+- It only attempts a Postgres write if `selected.pgpass=true` (avoids hanging on auth prompts).
+
 Uninstall:
 
 - Remove `~/.config/opencode/plugins/agent-memory-systems-postgres.js`

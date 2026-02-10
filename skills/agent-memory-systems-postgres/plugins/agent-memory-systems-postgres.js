@@ -33,6 +33,12 @@ export const AgentMemorySystemsPostgres = async ({ $, directory, client }) => {
     }
   }
 
+  const isPluginEnabled = () => {
+    const setup = readSetup()
+    const selected = setup?.selected
+    return selected?.opencode_plugin === true
+  }
+
   const appendJsonl = (obj) => {
     try {
       ensureDir()
@@ -68,6 +74,7 @@ export const AgentMemorySystemsPostgres = async ({ $, directory, client }) => {
   }
 
   const tryVerifySetup = async () => {
+    if (!isPluginEnabled()) return
     const setup = readSetup()
     const selected = setup?.selected
     if (!selected) return
@@ -99,7 +106,7 @@ export const AgentMemorySystemsPostgres = async ({ $, directory, client }) => {
 
     if (selected.ollama) {
       try {
-        await $`curl -fsS http://localhost:11434/api/tags`.quiet()
+        await $`curl -fsS --max-time 2 http://localhost:11434/api/tags`.quiet()
         results.ollama = true
       } catch {
         results.ollama = false
@@ -121,6 +128,10 @@ export const AgentMemorySystemsPostgres = async ({ $, directory, client }) => {
   try { await tryVerifySetup() } catch {}
 
   const tryPsqlStore = async ({ sessionID }) => {
+    if (!isPluginEnabled()) return
+    const setup = readSetup()
+    const selected = setup?.selected
+    if (!selected?.pgpass) return
     try {
       const pg = getPgConfig()
       const time = nowUtc()
