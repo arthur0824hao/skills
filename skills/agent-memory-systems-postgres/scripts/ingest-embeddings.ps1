@@ -12,6 +12,15 @@ function Escape-SqlLiteral {
   return ($Value -replace "'", "''")
 }
 
+function New-TempFilePath {
+  param(
+    [Parameter(Mandatory = $true)][string]$Prefix,
+    [Parameter(Mandatory = $true)][string]$Suffix
+  )
+  $name = $Prefix + '-' + ([Guid]::NewGuid().ToString('n')) + $Suffix
+  return (Join-Path $env:TEMP $name)
+}
+
 function Resolve-PsqlPath {
   $cmd = Get-Command psql.exe -ErrorAction SilentlyContinue
   if ($cmd -and $cmd.Source) { return $cmd.Source }
@@ -180,7 +189,13 @@ WHERE id = $id;
     $pgDb = if ($env:PGDATABASE) { $env:PGDATABASE } else { 'agent_memory' }
     $pgUser = if ($env:PGUSER) { $env:PGUSER } else { 'postgres' }
 
-    & $psql -w -h $pgHost -p $pgPort -U $pgUser -d $pgDb -v 'ON_ERROR_STOP=1' -c $sql 1>$null 2>$null
+    $tmp = New-TempFilePath -Prefix 'agent-memory-embed' -Suffix '.sql'
+    try {
+      $sql | Out-File -LiteralPath $tmp -Encoding ascii
+      & $psql -w -h $pgHost -p $pgPort -U $pgUser -d $pgDb -v 'ON_ERROR_STOP=1' -f $tmp 1>$null 2>$null
+    } finally {
+      Remove-Item -Force -ErrorAction SilentlyContinue -LiteralPath $tmp
+    }
 
     if ($LASTEXITCODE -ne 0) {
       throw "psql failed with exit code $LASTEXITCODE"
