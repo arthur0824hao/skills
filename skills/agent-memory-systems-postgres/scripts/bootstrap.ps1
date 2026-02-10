@@ -1,5 +1,6 @@
 param(
   [switch]$InstallAll,
+  [switch]$PluginOnly,
   [string]$PgVersion = '18'
 )
 
@@ -67,6 +68,23 @@ $record = @{
   os = 'windows'
   selected = @{}
   notes = @()
+}
+
+if ($PluginOnly) {
+  $record.selected.opencode_plugin = $true
+  try {
+    $src = Join-Path $PSScriptRoot '..\plugins\agent-memory-systems-postgres.js'
+    $src = (Resolve-Path -LiteralPath $src).Path
+    $dst = Install-OpenCodePlugin -PluginName 'agent-memory-systems-postgres.js' -SourcePath $src
+    $record.notes += "OpenCode plugin installed: $dst"
+    $record.notes += 'Restart OpenCode to load plugin'
+  } catch {
+    $record.notes += "plugin install failed: $($_.Exception.Message)"
+  }
+
+  Write-SetupRecord -Record $record
+  Write-Host 'Bootstrap complete (plugin-only).'
+  exit 0
 }
 
 Assert-InteractiveOrInstallAll -InstallAll:$InstallAll
