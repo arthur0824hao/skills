@@ -290,6 +290,26 @@ Optional add-on: `conditional_blocks` (not implemented yet)
 - This is intentionally deferred until the core workflow feels solid.
 - If you need it now, store a condition in `task_links.metadata` (e.g., `{ "os": "windows" }`) and treat it as documentation.
 
+### Wrapper scripts (recommended)
+
+To avoid re-typing SQL, use the wrapper scripts shipped with this skill:
+
+Windows:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts\tasks.ps1" ready 50
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts\tasks.ps1" create "Install pgvector" 1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts\tasks.ps1" claim 2 agent-1
+```
+
+Linux/macOS:
+
+```bash
+bash "scripts/tasks.sh" ready 50
+bash "scripts/tasks.sh" create "Install pgvector" 1
+bash "scripts/tasks.sh" claim 2 agent-1
+```
+
 ## Compaction Log (high value)
 
 Compaction can delete context. Treat every compaction as an important event and record it.
@@ -473,6 +493,10 @@ Scheduling:
 
 - run daily (or hourly) after you add new memories
 - keep `Limit` small until you trust it
+
+Robustness note:
+
+- On Windows, very long SQL strings can be fragile when passed via `psql -c`. The ingestion script writes per-row updates to a temporary `.sql` file and runs `psql -f` to avoid command-line length/quoting edge cases.
 
 ## Related Skills
 
