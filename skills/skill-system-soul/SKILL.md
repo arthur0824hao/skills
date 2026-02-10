@@ -73,3 +73,43 @@ Read: `profiles/talkative.md`
 ## Creating Custom Profiles
 
 Copy `profiles/balanced.md` as template. Adjust the 6 sections to match your needs. Place in `profiles/` directory with a descriptive name.
+
+```skill-manifest
+{
+  "schema_version": "2.0",
+  "id": "skill-system-soul",
+  "version": "1.0.0",
+  "capabilities": ["soul-profile-load", "soul-profile-list"],
+  "effects": ["fs.read"],
+  "operations": {
+    "load-profile": {
+      "description": "Load a behavioral profile by name. Agent reads and adopts the profile.",
+      "input": {
+        "profile_name": { "type": "string", "required": true, "description": "Profile name: balanced, creative, strict, talkative, or a user name" }
+      },
+      "output": {
+        "description": "Profile markdown content",
+        "fields": { "content": "markdown text" }
+      },
+      "entrypoints": {
+        "agent": "Read profiles/<profile_name>.md"
+      }
+    },
+    "list-profiles": {
+      "description": "List available soul profiles.",
+      "input": {},
+      "output": {
+        "description": "Array of profile names",
+        "fields": { "profiles": "array of strings" }
+      },
+      "entrypoints": {
+        "agent": "List files in profiles/ directory"
+      }
+    }
+  },
+  "stdout_contract": {
+    "last_line_json": false,
+    "note": "Agent-executed; profiles are markdown files read directly."
+  }
+}
+```

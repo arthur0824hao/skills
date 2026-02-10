@@ -18,6 +18,15 @@ User goal → Read skills-index.json → Match capabilities → Read skill manif
 → Check policy → Execute entrypoints → Parse JSON output → Decide next step → Log
 ```
 
+## Step 0: Bootstrap (First Run Only)
+
+Check if the project's AGENTS.md contains `## Skill System`.
+
+- If found: skip to Step 1 (already bootstrapped).
+- If not found: follow `scripts/bootstrap.md` to embed the skill system into this project.
+
+This only runs once per project. After bootstrap, every future session reads AGENTS.md and knows about the skill system automatically.
+
 ## Step 1: Discover Skills
 
 Read `skills-index.json` (in the skills root directory, sibling to skill folders) to see available capabilities.

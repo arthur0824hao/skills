@@ -148,3 +148,59 @@ SELECT * FROM search_memories('insight-facet user:arthu', NULL, NULL, NULL, NULL
 - Facet extraction should be completable in one pass. If you cannot justify an adjustment with concrete evidence, propose no adjustment.
 - Users may communicate in Chinese; treat that as a signal about comfort, not as a personality dimension.
 - Keep values clamped to [0.0, 1.0].
+
+```skill-manifest
+{
+  "schema_version": "2.0",
+  "id": "skill-system-insight",
+  "version": "1.0.0",
+  "capabilities": ["insight-extract", "insight-matrix-update", "insight-synthesize"],
+  "effects": ["db.read", "db.write", "fs.write"],
+  "operations": {
+    "extract-facets": {
+      "description": "Extract a per-session facet from transcript. Rate limited to 3/24h per user.",
+      "input": {
+        "session_id": { "type": "string", "required": true, "description": "Session to analyze" },
+        "user": { "type": "string", "required": true, "description": "User handle" }
+      },
+      "output": {
+        "description": "Facet YAML stored to agent_memories",
+        "fields": { "status": "ok | error", "memory_id": "integer" }
+      },
+      "entrypoints": {
+        "agent": "Follow scripts/extract-facets.md procedure (no executable script)"
+      }
+    },
+    "update-matrix": {
+      "description": "Update dual matrix from stored facet with confidence gating.",
+      "input": {
+        "user": { "type": "string", "required": true, "description": "User handle" }
+      },
+      "output": {
+        "description": "Updated soul-state YAML stored to agent_memories",
+        "fields": { "status": "ok | error", "values_changed": "boolean" }
+      },
+      "entrypoints": {
+        "agent": "Follow scripts/update-matrix.md procedure"
+      }
+    },
+    "synthesize-profile": {
+      "description": "Regenerate Layer 3 Soul profile from matrix + recent facets.",
+      "input": {
+        "user": { "type": "string", "required": true, "description": "User handle" }
+      },
+      "output": {
+        "description": "User profile written to skill-system-soul/profiles/<user>.md",
+        "fields": { "status": "ok | error", "profile_path": "string" }
+      },
+      "entrypoints": {
+        "agent": "Follow scripts/synthesize-profile.md procedure"
+      }
+    }
+  },
+  "stdout_contract": {
+    "last_line_json": false,
+    "note": "Agent-executed procedures; output is structured YAML stored to DB, not stdout."
+  }
+}
+```
