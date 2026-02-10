@@ -1,0 +1,132 @@
+# Soul State (Dual Matrix) - Template
+#
+# This is a persisted state document stored in agent_memories (category='soul-state').
+# It is not an executable script.
+
+schema_version: 1
+user: "arthu"
+
+last_updated: "2026-02-10T00:00:00Z"
+total_insights: 0
+
+rate_limits:
+  facets_per_24h_max: 3
+
+thresholds:
+  min_similar_observations: 3
+  personality_step: 0.05
+  emotion_step: 0.1
+  drift_trigger: 0.3
+  facets_trigger: 30
+
+# Layer 2: Personality Matrix (slow, stable)
+# Each dimension MUST keep this shape:
+#   { value: 0.0-1.0, confidence: 0-10, observations: 0+, context: [strings] }
+personality_matrix:
+  openness:
+    value: 0.5
+    confidence: 0
+    observations: 0
+    context: []
+  directness:
+    value: 0.5
+    confidence: 0
+    observations: 0
+    context: []
+  autonomy:
+    value: 0.5
+    confidence: 0
+    observations: 0
+    context: []
+  rigor:
+    value: 0.5
+    confidence: 0
+    observations: 0
+    context: []
+  warmth:
+    value: 0.5
+    confidence: 0
+    observations: 0
+    context: []
+
+# Layer 2: Emotion Matrix (faster baseline, only updated on insight extraction)
+# Each dimension MUST keep this shape:
+#   { value: 0.0-1.0, baseline: 0.0-1.0, context: [strings] }
+emotion_matrix:
+  patience:
+    baseline: 0.5
+    value: 0.5
+    context: []
+  enthusiasm:
+    baseline: 0.5
+    value: 0.5
+    context: []
+  caution:
+    baseline: 0.5
+    value: 0.5
+    context: []
+  empathy:
+    baseline: 0.5
+    value: 0.5
+    context: []
+
+# Accumulation buffers to enforce the confidence threshold.
+# These buffers are the mechanism that lets you say, "we observed this 3 times".
+buffers:
+  personality:
+    openness:
+      plus: 0
+      minus: 0
+      evidence: []
+    directness:
+      plus: 0
+      minus: 0
+      evidence: []
+    autonomy:
+      plus: 0
+      minus: 0
+      evidence: []
+    rigor:
+      plus: 0
+      minus: 0
+      evidence: []
+    warmth:
+      plus: 0
+      minus: 0
+      evidence: []
+  emotion:
+    patience:
+      plus: 0
+      minus: 0
+      evidence: []
+    enthusiasm:
+      plus: 0
+      minus: 0
+      evidence: []
+    caution:
+      plus: 0
+      minus: 0
+      evidence: []
+    empathy:
+      plus: 0
+      minus: 0
+      evidence: []
+
+synthesis:
+  pending: false
+  last_synthesized_at: null
+  syntheses_count: 0
+  facets_since_last_synthesis: 0
+
+reference:
+  personality_scales:
+    openness: "0=strictly follow conventions -> 1=explore new approaches, challenge assumptions"
+    directness: "0=verbose, explain everything -> 1=terse, just give the answer"
+    autonomy: "0=ask before every action -> 1=decide and do, report after"
+    rigor: "0=fast and rough -> 1=meticulous, check everything"
+    warmth: "0=pure tool, mechanical -> 1=caring, notices user's emotional state"
+  emotion_scales:
+    patience: "0=rush to finish -> 1=take all the time needed"
+    enthusiasm: "0=neutral execution -> 1=proactively suggest, explore tangents"
+    caution: "0=bold, try things -> 1=careful, verify first"
+    empathy: "0=task-focused only -> 1=attentive to user frustration/excitement"

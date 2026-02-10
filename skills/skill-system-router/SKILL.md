@@ -97,6 +97,19 @@ UPDATE skill_system.runs SET status='succeeded', ended_at=NOW(),
 
 Skip logging for simple single-operation calls.
 
+## Insight Suggestion
+
+After completing a non-trivial session (multi-step work, significant discussion, or debugging), consider suggesting an insight pass:
+
+> "Want me to run an insight pass on this session? It helps me learn your preferences for better collaboration next time."
+
+This is a lightweight, optional prompt. Only suggest when:
+- The session had meaningful interaction (not a single-line fix)
+- The user hasn't already triggered insight extraction recently
+- The session contained signals worth capturing (frustration, satisfaction, style preferences)
+
+If the user agrees, load `skill-system-insight` and follow `scripts/extract-facets.md`.
+
 ## Common Patterns
 
 **Single operation:**

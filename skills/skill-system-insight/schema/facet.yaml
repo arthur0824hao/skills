@@ -1,0 +1,138 @@
+# Session Facet - Schema + Example
+#
+# This is a human-readable schema document.
+# Facets are stored in agent_memories (category='insight-facet') as YAML text.
+
+schema_version: 1
+title: "Session Facet"
+
+enums:
+  session_type:
+    - single_task
+    - multi_task
+    - iterative_refinement
+    - discussion
+    - debugging
+  outcome:
+    - fully_achieved
+    - mostly_achieved
+    - partially_achieved
+    - not_achieved
+  communication_style:
+    - terse
+    - balanced
+    - verbose
+  decision_pattern:
+    - quick_decisive
+    - deliberate
+    - needs_options
+  feedback_type:
+    - explicit
+    - implicit
+    - none
+  helpfulness:
+    - very_helpful
+    - helpful
+    - neutral
+    - unhelpful
+  response_fit:
+    - too_verbose
+    - just_right
+    - too_brief
+  autonomy_fit:
+    - too_autonomous
+    - just_right
+    - too_cautious
+  personality_dimension:
+    - openness
+    - directness
+    - autonomy
+    - rigor
+    - warmth
+  emotion_dimension:
+    - patience
+    - enthusiasm
+    - caution
+    - empathy
+  personality_direction:
+    - "+0.05"
+    - "-0.05"
+  emotion_direction:
+    - "+0.1"
+    - "-0.1"
+
+required_fields:
+  - session_id
+  - timestamp
+  - user
+  - underlying_goal
+  - session_type
+  - outcome
+  - brief_summary
+  - user_signals
+  - agent_performance
+
+shape:
+  session_id: "string (e.g. ses_xxx)"
+  timestamp: "string (ISO 8601 UTC)"
+  user: "string"
+
+  underlying_goal: "string"
+  session_type: "enum: session_type"
+  outcome: "enum: outcome"
+  brief_summary: "string (one sentence)"
+
+  user_signals:
+    communication_style: "enum: communication_style"
+    decision_pattern: "enum: decision_pattern"
+    feedback_type: "enum: feedback_type"
+    frustration_moments: "string[]"
+    satisfaction_moments: "string[]"
+
+  agent_performance:
+    helpfulness: "enum: helpfulness"
+    response_fit: "enum: response_fit"
+    autonomy_fit: "enum: autonomy_fit"
+    primary_success: "string"
+    primary_friction: "string"
+
+  proposed_adjustments: "optional"
+  proposed_adjustments.personality: "optional"
+  proposed_adjustments.personality.dimension: "enum: personality_dimension"
+  proposed_adjustments.personality.direction: "enum: personality_direction"
+  proposed_adjustments.personality.evidence: "string"
+  proposed_adjustments.emotion: "optional"
+  proposed_adjustments.emotion.dimension: "enum: emotion_dimension"
+  proposed_adjustments.emotion.direction: "enum: emotion_direction"
+  proposed_adjustments.emotion.evidence: "string"
+
+example:
+  session_id: "ses_abc123"
+  timestamp: "2026-02-10T18:00:00Z"
+  user: "arthu"
+
+  underlying_goal: "Create a new skill with schemas, prompts, and procedures so agents can learn user preferences over time."
+  session_type: "multi_task"
+  outcome: "fully_achieved"
+  brief_summary: "Authored the full skill-system-insight skill with schemas, prompts, and procedures."
+
+  user_signals:
+    communication_style: "terse"
+    decision_pattern: "quick_decisive"
+    feedback_type: "explicit"
+    frustration_moments: []
+    satisfaction_moments:
+      - "User provided exhaustive requirements and preferred direct execution without back-and-forth."
+
+  agent_performance:
+    helpfulness: "very_helpful"
+    response_fit: "just_right"
+    autonomy_fit: "just_right"
+    primary_success: "Executed requirements as written and preserved constraints (no edits outside the new skill directory)."
+    primary_friction: "None observed."
+
+  proposed_adjustments:
+    personality:
+      dimension: "autonomy"
+      direction: "+0.05"
+      evidence: "User explicitly asked for autonomous execution and specified not to ask clarifying questions unless blocked."
