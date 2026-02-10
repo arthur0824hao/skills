@@ -7,6 +7,11 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+function Escape-SqlLiteral {
+  param([Parameter(Mandatory = $true)][string]$Value)
+  return ($Value -replace "'", "''")
+}
+
 function Resolve-PsqlPath {
   $cmd = Get-Command psql.exe -ErrorAction SilentlyContinue
   if ($cmd -and $cmd.Source) { return $cmd.Source }
@@ -150,18 +155,22 @@ foreach ($line in $lines) {
   # Build pgvector literal: [0.1,0.2,...]
   $vec = '[' + (($embedding | ForEach-Object { ([double]$_).ToString('R', [System.Globalization.CultureInfo]::InvariantCulture) }) -join ',') + ']'
 
+  $modelSql = Escape-SqlLiteral -Value $model
+  $providerSql = Escape-SqlLiteral -Value $provider
+  $apiUrlSql = Escape-SqlLiteral -Value $apiUrl
+
   $sql = @"
 UPDATE agent_memories
-SET embedding = :'emb'::vector,
+SET embedding = '$vec'::vector,
     metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
-      'embedding_model', :'model',
-      'embedding_dim', :'dim',
-      'embedding_api_url', :'api_url',
-      'embedding_provider', :'provider',
+      'embedding_model', '$modelSql',
+      'embedding_dim', $dim,
+      'embedding_api_url', '$apiUrlSql',
+      'embedding_provider', '$providerSql',
       'embedded_at', now()
     ),
     updated_at = NOW()
-WHERE id = :'id'::bigint;
+WHERE id = $id;
 "@
 
   try {
@@ -171,14 +180,7 @@ WHERE id = :'id'::bigint;
     $pgDb = if ($env:PGDATABASE) { $env:PGDATABASE } else { 'agent_memory' }
     $pgUser = if ($env:PGUSER) { $env:PGUSER } else { 'postgres' }
 
-    & $psql -w -h $pgHost -p $pgPort -U $pgUser -d $pgDb -v 'ON_ERROR_STOP=1' `
-      -v ("id=$id") `
-      -v ("model=$model") `
-      -v ("dim=$dim") `
-      -v ("api_url=$apiUrl") `
-      -v ("provider=$provider") `
-      -v ("emb=$vec") `
-      -c $sql 1>$null 2>$null
+    & $psql -w -h $pgHost -p $pgPort -U $pgUser -d $pgDb -v 'ON_ERROR_STOP=1' -c $sql 1>$null 2>$null
 
     if ($LASTEXITCODE -ne 0) {
       throw "psql failed with exit code $LASTEXITCODE"

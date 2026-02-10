@@ -36,6 +36,22 @@ function Resolve-PgConfigPath {
   return $null
 }
 
+function Resolve-GitPath {
+  $cmd = Get-Command git.exe -ErrorAction SilentlyContinue
+  if ($cmd -and $cmd.Source) { return $cmd.Source }
+
+  $candidates = @(
+    "$env:ProgramFiles\Git\cmd\git.exe",
+    "$env:ProgramFiles\Git\bin\git.exe",
+    "$env:ProgramFiles(x86)\Git\cmd\git.exe",
+    "$env:ProgramFiles(x86)\Git\bin\git.exe"
+  )
+  foreach ($p in $candidates) {
+    if ($p -and (Test-Path -LiteralPath $p)) { return $p }
+  }
+  return $null
+}
+
 function Resolve-VsWhere {
   $candidates = @(
     "$env:ProgramFiles(x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe",
@@ -48,14 +64,27 @@ function Resolve-VsWhere {
 }
 
 function Resolve-VsDevCmd {
+  # Prefer vswhere if present, but fall back to common install paths.
   $vswhere = Resolve-VsWhere
-  if (-not $vswhere) { return $null }
+  if ($vswhere) {
+    $installPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+    if ($installPath) {
+      $devcmd = Join-Path $installPath 'Common7\Tools\VsDevCmd.bat'
+      if (Test-Path -LiteralPath $devcmd) { return $devcmd }
+    }
+  }
 
-  $installPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-  if (-not $installPath) { return $null }
+  $fallbacks = @(
+    "$env:ProgramFiles(x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat",
+    "$env:ProgramFiles\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat",
+    "$env:ProgramFiles(x86)\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat",
+    "$env:ProgramFiles\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
+  )
 
-  $devcmd = Join-Path $installPath 'Common7\Tools\VsDevCmd.bat'
-  if (Test-Path -LiteralPath $devcmd) { return $devcmd }
+  foreach ($p in $fallbacks) {
+    if ($p -and (Test-Path -LiteralPath $p)) { return $p }
+  }
+
   return $null
 }
 
@@ -64,8 +93,17 @@ function Try-EnableExtension {
     [Parameter(Mandatory = $true)][string]$Psql
   )
 
-  & $Psql -w -h localhost -p 5432 -U postgres -d agent_memory -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;" 1>$null 2>$null
-  return ($LASTEXITCODE -eq 0)
+  # PowerShell may treat native stderr as terminating when $ErrorActionPreference='Stop'.
+  $oldEap = $ErrorActionPreference
+  try {
+    $ErrorActionPreference = 'Continue'
+    & $Psql -w -h localhost -p 5432 -U postgres -d agent_memory -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;" 1>$null 2>$null
+    return ($LASTEXITCODE -eq 0)
+  } catch {
+    return $false
+  } finally {
+    $ErrorActionPreference = $oldEap
+  }
 }
 
 function Apply-InitSql {
@@ -75,13 +113,25 @@ function Apply-InitSql {
 
   $initSql = Join-Path $PSScriptRoot '..\init.sql'
   $initSql = (Resolve-Path -LiteralPath $initSql).Path
-  & $Psql -w -h localhost -p 5432 -U postgres -d agent_memory -v ON_ERROR_STOP=1 -f $initSql 1>$null 2>$null
-  return ($LASTEXITCODE -eq 0)
+  $oldEap = $ErrorActionPreference
+  try {
+    $ErrorActionPreference = 'Continue'
+    & $Psql -w -h localhost -p 5432 -U postgres -d agent_memory -v ON_ERROR_STOP=1 -f $initSql 1>$null 2>$null
+    return ($LASTEXITCODE -eq 0)
+  } catch {
+    return $false
+  } finally {
+    $ErrorActionPreference = $oldEap
+  }
 }
 
 Write-Host "setup-pgvector.ps1 PgVersion=$PgVersion"
+Write-Output "setup-pgvector.ps1 PgVersion=$PgVersion"
 
-Assert-Admin
+# Admin is required only for build/install steps that write into PostgreSQL's install directory.
+if ($Install -or $InstallPrereqs) {
+  Assert-Admin
+}
 
 $psql = Resolve-PsqlPath
 if (-not $psql) {
@@ -97,8 +147,12 @@ if (-not $pgConfig) {
 if ($Enable -or (-not $Install -and -not $InstallPrereqs)) {
   if (Try-EnableExtension -Psql $psql) {
     Write-Host 'pgvector extension enabled (already installed).'
+    Write-Output 'pgvector extension enabled (already installed).'
     if ($ApplyInitSql) {
-      if (Apply-InitSql -Psql $psql) { Write-Host 'init.sql applied.' }
+      if (Apply-InitSql -Psql $psql) {
+        Write-Host 'init.sql applied.'
+        Write-Output 'init.sql applied.'
+      }
     }
     exit 0
   }
@@ -106,6 +160,7 @@ if ($Enable -or (-not $Install -and -not $InstallPrereqs)) {
 
 if (-not $Install) {
   Write-Host 'pgvector is not installed. Re-run with -Install (and optionally -InstallPrereqs) to build+install.'
+  Write-Output 'pgvector is not installed. Re-run with -Install (and optionally -InstallPrereqs) to build+install.'
   exit 0
 }
 
@@ -114,15 +169,18 @@ if ($InstallPrereqs) {
     throw 'winget not found; install App Installer from Microsoft Store.'
   }
 
-  if (-not (Get-Command git.exe -ErrorAction SilentlyContinue)) {
+  if (-not (Resolve-GitPath)) {
     Write-Host 'Installing Git via winget...'
+    Write-Output 'Installing Git via winget...'
     & winget install --id Git.Git -e --accept-package-agreements --accept-source-agreements
   }
 
   if (-not (Resolve-VsDevCmd)) {
     Write-Host 'Installing Visual Studio Build Tools (C++ toolchain) via winget...'
+    Write-Output 'Installing Visual Studio Build Tools (C++ toolchain) via winget...'
     & winget install --id Microsoft.VisualStudio.2022.BuildTools -e --accept-package-agreements --accept-source-agreements
     Write-Host 'NOTE: You may need to re-run this script after installation completes.'
+    Write-Output 'NOTE: You may need to re-run this script after installation completes.'
   }
 }
 
@@ -131,7 +189,8 @@ if (-not $vsDevCmd) {
   throw 'VsDevCmd.bat not found. Install Visual Studio Build Tools (C++), then re-run.'
 }
 
-if (-not (Get-Command git.exe -ErrorAction SilentlyContinue)) {
+$git = Resolve-GitPath
+if (-not $git) {
   throw 'git.exe not found. Install Git, then re-run.'
 }
 
@@ -140,11 +199,13 @@ $temp = Join-Path $env:TEMP ('pgvector-build-' + [Guid]::NewGuid().ToString('n')
 New-Item -ItemType Directory -Path $temp -Force | Out-Null
 
 Write-Host 'Cloning pgvector...'
-& git clone --branch $VersionTag --depth 1 https://github.com/pgvector/pgvector.git $temp
+Write-Output 'Cloning pgvector...'
+& $git clone --branch $VersionTag --depth 1 https://github.com/pgvector/pgvector.git $temp
 
 $pgRoot = (Split-Path -Parent (Split-Path -Parent $psql))
 
 Write-Host 'Building pgvector with nmake...'
+Write-Output 'Building pgvector with nmake...'
 $cmd = "`"$vsDevCmd`" -arch=x64 -host_arch=x64 && set `"PGROOT=$pgRoot`" && cd /d `"$temp`" && nmake /F Makefile.win && nmake /F Makefile.win install"
 & cmd.exe /c $cmd
 
@@ -158,12 +219,15 @@ if (-not (Try-EnableExtension -Psql $psql)) {
 }
 
 Write-Host 'pgvector extension enabled.'
+Write-Output 'pgvector extension enabled.'
 
 if ($ApplyInitSql) {
   if (Apply-InitSql -Psql $psql) {
     Write-Host 'init.sql applied.'
+    Write-Output 'init.sql applied.'
   } else {
     Write-Host 'init.sql apply failed (non-fatal).'
+    Write-Output 'init.sql apply failed (non-fatal).'
   }
 }
 
