@@ -224,6 +224,72 @@ MUST DO AFTER:
   If you solved something new, store it with store_memory(...)
 ```
 
+## Task Memory Layer (optional)
+
+This skill also ships a minimal task/issue layer inspired by Beads: graph semantics + deterministic "ready work" queries.
+
+Objects:
+
+- `agent_tasks`: tasks (status, priority, assignee)
+- `task_links`: typed links (`blocks`, `parent_child`, `related`, etc.)
+- `blocked_tasks_cache`: materialized cache to make ready queries fast
+- `task_memory_links`: link tasks to memories (`agent_memories`) for outcomes/notes
+
+Create tasks:
+
+```sql
+INSERT INTO agent_tasks(title, description, created_by, priority)
+VALUES ('Install pgvector', 'Windows build + enable extension', 'user', 1);
+```
+
+Add dependencies:
+
+```sql
+-- Task 1 blocks task 2
+INSERT INTO task_links(from_task_id, to_task_id, link_type)
+VALUES (1, 2, 'blocks');
+
+-- Task 2 is parent of task 3 (used for transitive blocking)
+INSERT INTO task_links(from_task_id, to_task_id, link_type)
+VALUES (2, 3, 'parent_child');
+```
+
+Rebuild blocked cache (usually auto via triggers):
+
+```sql
+SELECT rebuild_blocked_tasks_cache();
+```
+
+Ready work query:
+
+```sql
+SELECT id, title, priority
+FROM agent_tasks t
+WHERE t.deleted_at IS NULL
+  AND t.status IN ('open','in_progress')
+  AND NOT EXISTS (SELECT 1 FROM blocked_tasks_cache b WHERE b.task_id = t.id)
+ORDER BY priority ASC, updated_at ASC
+LIMIT 50;
+```
+
+Claim a task (atomic):
+
+```sql
+SELECT claim_task(2, 'agent-1');
+```
+
+Link a task to a memory:
+
+```sql
+INSERT INTO task_memory_links(task_id, memory_id, link_type)
+VALUES (2, 123, 'outcome');
+```
+
+Optional add-on: `conditional_blocks` (not implemented yet)
+
+- This is intentionally deferred until the core workflow feels solid.
+- If you need it now, store a condition in `task_links.metadata` (e.g., `{ "os": "windows" }`) and treat it as documentation.
+
 ## Compaction Log (high value)
 
 Compaction can delete context. Treat every compaction as an important event and record it.
