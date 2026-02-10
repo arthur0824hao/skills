@@ -210,6 +210,7 @@ bash "<skill-dir>/scripts/sync_memory_to_md.sh" --out-dir "./Memory"
 Outputs:
 
 - `Memory/Long.md` (semantic + procedural)
+- `Memory/Procedural.md` (procedural only)
 - `Memory/Short.md` (friction + compaction-daily + procedural highlights)
 - `Memory/Episodic.md` (episodic)
 
@@ -219,6 +220,10 @@ Backups:
 - Use `--no-backup` to disable.
 
 The sync script will also create `Memory/.gitignore` if it doesn't exist (ignores `.backups/` and `SYNC_STATUS.txt`).
+
+Long index:
+
+- `Memory/Long.md` includes an `Index` section (top categories + tags) to make the export browsable.
 
 ### `search_memories(query, types[], categories[], tags[], agent_id, min_importance, limit)`
 
