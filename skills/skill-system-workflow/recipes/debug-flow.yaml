@@ -1,0 +1,83 @@
+schema_version: 1
+name: "debug-flow"
+description: "Debugging workflow: reproduce, analyze root cause, implement fix, and verify with tests."
+trigger_patterns:
+  - "debug"
+  - "fix bug"
+  - "troubleshoot"
+  - "error"
+  - "broken"
+waves:
+  - name: "Wave 1: Reproduce + gather context"
+    parallel: true
+    tasks:
+      - id: "reproduce-issue"
+        name: "Reproduce the issue"
+        agent_type: explore
+        description: "Reproduce the reported problem for {goal}. Capture exact steps and observed vs expected behavior."
+        depends_on: []
+        verification: "A minimal reproduction sequence exists and the failure is observed reliably."
+        skills:
+          - "systematic-debugging"
+      - id: "gather-logs-and-signals"
+        name: "Gather logs and signals"
+        agent_type: explore
+        description: "Collect relevant logs, stack traces, error messages, and environment details for {goal}."
+        depends_on: []
+        verification: "Key error outputs are captured and linked to the reproduction steps."
+        skills:
+          - "systematic-debugging"
+      - id: "identify-suspect-area"
+        name: "Identify suspect area"
+        agent_type: explore
+        description: "Locate likely files/modules involved and note recent changes or config that could affect {goal}."
+        depends_on: []
+        verification: "A short list of suspect files/modules and hypotheses is produced."
+        skills:
+          - "systematic-debugging"
+  - name: "Wave 2: Root cause analysis"
+    parallel: false
+    tasks:
+      - id: "root-cause-analysis"
+        name: "Root cause analysis"
+        agent_type: oracle
+        description: "Analyze the gathered signals, confirm the root cause, and propose a fix strategy for {goal}."
+        depends_on:
+          - "reproduce-issue"
+          - "gather-logs-and-signals"
+          - "identify-suspect-area"
+        verification: "Root cause is stated as a falsifiable claim and the proposed fix addresses it directly."
+        skills:
+          - "systematic-debugging"
+  - name: "Wave 3: Implement fix"
+    parallel: false
+    tasks:
+      - id: "implement-fix"
+        name: "Implement fix"
+        agent_type: build
+        description: "Implement the smallest safe change that fixes the root cause for {goal}."
+        depends_on:
+          - "root-cause-analysis"
+        verification: "Code changes compile/build and align with existing conventions."
+        skills: []
+  - name: "Wave 4: Verify fix"
+    parallel: false
+    tasks:
+      - id: "verify-reproduction-resolved"
+        name: "Verify reproduction resolved"
+        agent_type: quick
+        description: "Re-run the reproduction steps for {goal} and confirm the issue no longer occurs."
+        depends_on:
+          - "implement-fix"
+        verification: "Original failure no longer reproduces; expected behavior observed."
+        skills: []
+      - id: "run-regression-tests"
+        name: "Run regression tests"
+        agent_type: build
+        description: "Run relevant automated tests and add/adjust tests if needed to prevent regressions for {goal}."
+        depends_on:
+          - "implement-fix"
+        verification: "Test suite passes and coverage includes the fixed behavior (or explicit note why not)."
+        skills:
+          - "javascript-testing-patterns"
+          - "python-testing-patterns"

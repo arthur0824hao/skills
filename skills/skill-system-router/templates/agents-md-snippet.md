@@ -10,6 +10,8 @@ This project uses a skill system for agent orchestration, behavioral profiles, a
 2. **Soul**: Load `skill-system-soul` to adopt a behavioral profile. Available: `balanced` (default), `creative`, `strict`, `talkative`.
 3. **Memory**: Use `agent_memories` (PostgreSQL) for persistent cross-session memory. See `skill-system-memory`.
 4. **Insight**: After non-trivial sessions, suggest an insight pass to learn user preferences. See `skill-system-insight`.
+5. **Workflow**: Load `skill-system-workflow` to plan multi-step work as DAGs with Mermaid visualization. Includes reusable recipes for common patterns (debug, feature, session start/end).
+6. **Evolution**: Load `skill-system-evolution` to evolve soul profiles and workflow recipes based on accumulated insight data. Version-controlled with rollback support.
 
 ### Quick Reference
 - Discover skills: read `{SKILLS_DIR}/skills-index.json` or run `build-index.sh`
@@ -17,6 +19,9 @@ This project uses a skill system for agent orchestration, behavioral profiles, a
 - Store memory: `SELECT store_memory(type, category, tags, title, content, metadata, agent_id, session_id, importance);`
 - Search memory: `SELECT * FROM search_memories('query');`
 - Extract insight: follow `{SKILLS_DIR}/skill-system-insight/scripts/extract-facets.md`
+- Plan workflow: follow `{SKILLS_DIR}/skill-system-workflow/scripts/plan-and-visualize.md`
+- Evolve soul: follow `{SKILLS_DIR}/skill-system-evolution/scripts/evolve-soul.md`
+- List versions: follow `{SKILLS_DIR}/skill-system-evolution/scripts/list-versions.md`
 
 ### User Soul State
 If a personalized profile exists at `{SKILLS_DIR}/skill-system-soul/profiles/<user>.md`, prefer it over `balanced.md`.

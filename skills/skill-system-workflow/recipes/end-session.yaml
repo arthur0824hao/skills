@@ -1,0 +1,48 @@
+schema_version: 1
+name: "end-session"
+description: "Standard session wrap-up: summarize work, ensure todos are complete, optionally extract insights."
+trigger_patterns:
+  - "end session"
+  - "wrap up"
+  - "session end"
+  - "done for now"
+waves:
+  - name: "Wave 1: Summarize session + verify all todos complete"
+    parallel: false
+    tasks:
+      - id: "summarize-session"
+        name: "Summarize session"
+        agent_type: oracle
+        description: "Produce a concise recap of what changed, why, and what remains. Ensure it is self-contained. Goal: {goal}"
+        depends_on: []
+        verification: "Summary includes references to key files/commands and clearly states current state."
+        skills: []
+      - id: "verify-todos-complete"
+        name: "Verify todos complete"
+        agent_type: quick
+        description: "Verify that all planned tasks/todos are marked complete and that required verifications were performed. Goal: {goal}"
+        depends_on:
+          - "summarize-session"
+        verification: "Explicitly confirm todo completion status and any skipped verification steps."
+        skills: []
+  - name: "Wave 2: Optional insight extraction"
+    parallel: false
+    tasks:
+      - id: "extract-insight-facets"
+        name: "Extract insight facets"
+        agent_type: oracle
+        description: "If the session was non-trivial, extract insight facets about user preferences and store them. Goal: {goal}"
+        depends_on:
+          - "verify-todos-complete"
+        verification: "Facet YAML is produced and ready to store (or explicitly skipped with rationale)."
+        skills:
+          - "skill-system-insight"
+      - id: "store-insight"
+        name: "Store insight"
+        agent_type: build
+        description: "Store extracted facets to the memory database using the documented storage procedure (only if extraction was done). Goal: {goal}"
+        depends_on:
+          - "extract-insight-facets"
+        verification: "Database write confirmed (or task is marked skipped with rationale)."
+        skills:
+          - "skill-system-postgres"

@@ -1,0 +1,48 @@
+# Evolution Plan - Schema + Example
+schema_version: 1
+title: "Evolution Plan"
+enums:
+  target:
+    - soul
+    - recipe
+    - both
+required_fields:
+  - user
+  - target
+  - proposed_at
+  - requires_approval
+  - proposed_changes
+  - estimated_impact
+shape:
+  user: "string"
+  target: "enum: soul | recipe | both"
+  proposed_at: "string (ISO 8601)"
+  requires_approval: "boolean"
+  reason: "string (why approval is needed, if applicable)"
+  proposed_changes:
+    - dimension: "string"
+      current_value: "any"
+      proposed_value: "any"
+      evidence_count: "integer"
+      evidence_summary: "string"
+      drift_from_baseline: "number"
+  estimated_impact: "string (brief description)"
+example:
+  user: "arthu"
+  target: soul
+  proposed_at: "2026-02-11T10:05:00Z"
+  requires_approval: false
+  reason: ""
+  proposed_changes:
+    - dimension: "verification"
+      current_value:
+        lsp_diagnostics_required: true
+        build_required_when_applicable: true
+      proposed_value:
+        lsp_diagnostics_required: true
+        build_required_when_applicable: true
+        prefer_read_tools_over_shell: true
+      evidence_count: 4
+      evidence_summary: "4 sessions showed repeated reminders to prefer Read/Glob/Grep tools; aligning default behavior. Evidence: ses_a1, ses_b2, ses_c3, ses_d4."
+      drift_from_baseline: 0.2
+  estimated_impact: "Fewer tool misuse corrections; improved speed and consistency. Tradeoff: slightly more structured workflow."

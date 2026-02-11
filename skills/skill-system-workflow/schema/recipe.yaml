@@ -1,0 +1,60 @@
+# Workflow Recipe - Schema + Example
+#
+# This is a human-readable schema document.
+# Recipes are reusable workflow templates. The planner may match a goal against `trigger_patterns`.
+# When matched, a recipe provides a base set of waves and tasks that are then customized to the goal.
+
+schema_version: 1
+title: "Workflow Recipe"
+
+required_fields:
+  - name
+  - description
+  - trigger_patterns
+  - waves
+
+shape:
+  name: "string (matches filename)"
+  description: "string"
+  trigger_patterns: "string[] (keywords/phrases that match this recipe)"
+  waves:
+    - name: "string"
+      parallel: "boolean"
+      tasks:
+        - id: "string"
+          name: "string"
+          agent_type: "string"
+          description: "string (template, may use {goal} placeholder)"
+          depends_on: "string[]"
+          verification: "string"
+          skills: "string[]"
+
+example:
+  schema_version: 1
+  name: "example-recipe"
+  description: "Example recipe that demonstrates the recipe format"
+  trigger_patterns:
+    - "example"
+    - "demo"
+  waves:
+    - name: "Wave 1: Understand the goal"
+      parallel: false
+      tasks:
+        - id: "clarify-requirements"
+          name: "Clarify requirements"
+          agent_type: oracle
+          description: "Turn {goal} into a concrete checklist of acceptance criteria."
+          depends_on: []
+          verification: "Acceptance criteria list is written and unambiguous."
+          skills: []
+    - name: "Wave 2: Implement"
+      parallel: false
+      tasks:
+        - id: "implement-change"
+          name: "Implement change"
+          agent_type: build
+          description: "Implement {goal} following project conventions."
+          depends_on:
+            - clarify-requirements
+          verification: "Code compiles/build passes and the acceptance criteria are met."
+          skills: []

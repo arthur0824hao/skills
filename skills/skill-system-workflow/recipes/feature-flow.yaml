@@ -1,0 +1,78 @@
+schema_version: 1
+name: "feature-flow"
+description: "Feature workflow: research, architecture plan, implement, and verify with tests."
+trigger_patterns:
+  - "implement feature"
+  - "add feature"
+  - "new feature"
+  - "build"
+waves:
+  - name: "Wave 1: Research + explore codebase"
+    parallel: true
+    tasks:
+      - id: "survey-codebase"
+        name: "Survey codebase"
+        agent_type: explore
+        description: "Locate the relevant modules, entrypoints, and existing patterns that relate to {goal}."
+        depends_on: []
+        verification: "Key files/dirs and extension points are identified."
+        skills: []
+      - id: "collect-related-docs"
+        name: "Collect related docs"
+        agent_type: librarian
+        description: "Find existing docs/specs/ADRs/tests that constrain or describe behavior relevant to {goal}."
+        depends_on: []
+        verification: "Relevant docs are referenced and any constraints are summarized."
+        skills: []
+  - name: "Wave 2: Plan architecture"
+    parallel: false
+    tasks:
+      - id: "define-acceptance-criteria"
+        name: "Define acceptance criteria"
+        agent_type: oracle
+        description: "Turn {goal} into measurable acceptance criteria and a minimal scope for v1."
+        depends_on:
+          - "survey-codebase"
+          - "collect-related-docs"
+        verification: "Acceptance criteria list is concrete and testable."
+        skills: []
+      - id: "design-approach"
+        name: "Design approach"
+        agent_type: oracle
+        description: "Propose an implementation approach (data flow, APIs, file touch points) aligned with repo conventions for {goal}."
+        depends_on:
+          - "define-acceptance-criteria"
+        verification: "Approach identifies the minimal set of files to change and the validation plan."
+        skills: []
+  - name: "Wave 3: Implement"
+    parallel: false
+    tasks:
+      - id: "implement-feature"
+        name: "Implement feature"
+        agent_type: deep
+        description: "Implement {goal} according to the design approach, keeping changes atomic and reviewable."
+        depends_on:
+          - "design-approach"
+        verification: "Feature behavior matches acceptance criteria and integrates cleanly."
+        skills: []
+  - name: "Wave 4: Verify + test"
+    parallel: false
+    tasks:
+      - id: "add-or-update-tests"
+        name: "Add or update tests"
+        agent_type: build
+        description: "Add or update automated tests to cover {goal} and prevent regressions."
+        depends_on:
+          - "implement-feature"
+        verification: "Tests cover the acceptance criteria and pass locally."
+        skills:
+          - "javascript-testing-patterns"
+          - "python-testing-patterns"
+      - id: "run-verification"
+        name: "Run verification"
+        agent_type: quick
+        description: "Run the minimal verification suite (tests/build/lint as applicable) for {goal} and report results."
+        depends_on:
+          - "add-or-update-tests"
+        verification: "Verification commands pass or failures are triaged with next steps."
+        skills: []

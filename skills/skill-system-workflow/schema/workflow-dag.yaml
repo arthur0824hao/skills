@@ -1,0 +1,87 @@
+# Workflow DAG - Schema + Example
+#
+# This is a human-readable schema document.
+# A workflow is represented as a DAG (Directed Acyclic Graph) grouped into ordered waves.
+# Waves can be parallel (tasks can be executed concurrently) or sequential.
+
+schema_version: 1
+title: "Workflow DAG"
+
+enums:
+  agent_type:
+    - explore
+    - librarian
+    - oracle
+    - build
+    - quick
+    - deep
+    - visual-engineering
+    - ultrabrain
+  status:
+    - pending
+    - running
+    - done
+    - failed
+
+required_fields:
+  - id
+  - goal
+  - created_at
+  - waves
+
+shape:
+  id: "string (unique workflow id)"
+  goal: "string"
+  created_at: "string (ISO 8601)"
+  waves:
+    - name: "string"
+      parallel: "boolean"
+      tasks:
+        - id: "string (unique task id)"
+          name: "string (short description)"
+          agent_type: "enum: explore | librarian | oracle | build | quick | deep | visual-engineering | ultrabrain"
+          description: "string (what to do)"
+          depends_on: "string[] (task ids from earlier waves)"
+          status: "enum: pending | running | done | failed"
+          verification: "string (how to verify completion)"
+          skills: "string[] (skills to load for this task)"
+
+example:
+  schema_version: 1
+  title: "Workflow DAG"
+  id: "wf_2026-02-11_demo"
+  goal: "Add a health-check endpoint and verify it"
+  created_at: "2026-02-11T12:00:00Z"
+  waves:
+    - name: "Wave 1: Gather context (parallel)"
+      parallel: true
+      tasks:
+        - id: "inspect-existing-routes"
+          name: "Inspect existing routes"
+          agent_type: explore
+          description: "Locate current routing setup and any existing health checks. Effort estimate: 10-20m"
+          depends_on: []
+          status: pending
+          verification: "List the relevant route files and confirm no duplicate /health endpoint exists."
+          skills: []
+        - id: "check-api-standards"
+          name: "Check API standards"
+          agent_type: librarian
+          description: "Find API conventions (path naming, response shape, error format). Effort estimate: 10-20m"
+          depends_on: []
+          status: pending
+          verification: "Identify the doc or existing endpoint that defines response conventions."
+          skills: []
+    - name: "Wave 2: Implement + verify (sequential)"
+      parallel: false
+      tasks:
+        - id: "implement-health-endpoint"
+          name: "Implement /health endpoint"
+          agent_type: build
+          description: "Add a new /health endpoint consistent with existing conventions. Effort estimate: 30-60m"
+          depends_on:
+            - inspect-existing-routes
+            - check-api-standards
+          status: pending
+          verification: "Run the service and confirm GET /health returns expected status and body."
+          skills: []

@@ -1,0 +1,51 @@
+# Evolution Snapshot - Schema + Example
+schema_version: 1
+title: "Evolution Snapshot"
+enums:
+  target:
+    - soul
+    - recipe
+    - both
+required_fields:
+  - version_tag
+  - target
+  - user
+  - created_at
+  - trigger
+  - changes
+  - snapshot_data
+shape:
+  version_tag: "string (v{N}_{target}_{timestamp}; e.g. v3_soul_20260211)"
+  target: "enum: soul | recipe | both"
+  user: "string"
+  created_at: "string (ISO 8601)"
+  trigger: "string (what caused this evolution)"
+  changes:
+    - dimension: "string"
+      field: "string"
+      old_value: "any"
+      new_value: "any"
+      evidence: "string[]"
+      confidence: "number (0.0-1.0)"
+  snapshot_data: "string (full artifact content - profile markdown or recipe yaml)"
+  rollback_from: "string | null (version_tag if this snapshot records a rollback)"
+example:
+  version_tag: "v3_soul_20260211"
+  target: soul
+  user: "arthu"
+  created_at: "2026-02-11T10:12:33Z"
+  trigger: "Repeated friction with overly verbose explanations across multiple sessions"
+  changes:
+    - dimension: "verbosity"
+      field: "response_verbosity"
+      old_value: 0.7
+      new_value: 0.5
+      evidence:
+        - "ses_9ab12: user asked for shorter answers; assistant over-explained"
+        - "ses_1cdef: user requested concise output; assistant included long rationale"
+        - "ses_77aa0: repeated feedback to be terse"
+      confidence: 0.82
+  snapshot_data: |
+    # Soul Profile: arthu
+    ... full profile markdown content ...
+  rollback_from: null

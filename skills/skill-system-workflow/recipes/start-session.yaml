@@ -1,0 +1,49 @@
+schema_version: 1
+name: "start-session"
+description: "Standard session bootstrap: load user soul/insight state, then discover local skill conventions."
+trigger_patterns:
+  - "start session"
+  - "begin work"
+  - "new session"
+  - "session start"
+waves:
+  - name: "Wave 1: Load soul profile + check insight state"
+    parallel: true
+    tasks:
+      - id: "load-soul-profile"
+        name: "Load soul profile"
+        agent_type: oracle
+        description: "Load the most specific soul profile available (user-specific preferred over balanced) and adopt it for the session. Goal: {goal}"
+        depends_on: []
+        verification: "State which profile was loaded and why (user-specific vs default)."
+        skills:
+          - "skill-system-soul"
+      - id: "check-insight-state"
+        name: "Check insight state"
+        agent_type: oracle
+        description: "Check whether an insight pass is warranted/available and note any relevant prior facets. Goal: {goal}"
+        depends_on: []
+        verification: "Report whether prior insight facets exist and whether to suggest an insight pass at the end."
+        skills:
+          - "skill-system-insight"
+          - "skill-system-postgres"
+  - name: "Wave 2: Read AGENTS.md + discover skills"
+    parallel: true
+    tasks:
+      - id: "read-agents-md"
+        name: "Read AGENTS.md"
+        agent_type: librarian
+        description: "Read the workspace AGENTS.md and extract operational constraints, tool norms, and any project-specific workflows. Goal: {goal}"
+        depends_on:
+          - "load-soul-profile"
+        verification: "List the key constraints that will affect execution (tools, verification, hygiene)."
+        skills: []
+      - id: "discover-skills"
+        name: "Discover available skills"
+        agent_type: explore
+        description: "Discover available skills in the skills directory/index and identify any relevant skills for {goal}."
+        depends_on:
+          - "load-soul-profile"
+        verification: "Return a short list of candidate skills to load for planning and execution."
+        skills:
+          - "skill-system-router"
