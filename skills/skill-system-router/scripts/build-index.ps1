@@ -13,15 +13,18 @@ if (-not $OutFile) { $OutFile = Join-Path $skillsRoot 'skills-index.json' }
 function Extract-ManifestBlock {
   param([Parameter(Mandatory=$true)][string]$MdPath)
   $lines = Get-Content -LiteralPath $MdPath -ErrorAction Stop
+  $ticks = '```'
   foreach ($tag in @('skill-manifest', 'router-manifest')) {
     $in = $false
     $buf = New-Object System.Collections.Generic.List[string]
+    $openPattern = '^' + [regex]::Escape($ticks) + $tag + '\s*$'
+    $closePattern = '^' + [regex]::Escape($ticks) + '\s*$'
     foreach ($l in $lines) {
       if (-not $in) {
-        if ($l -match "^\`\`\`$tag\s*$") { $in = $true; continue }
+        if ($l -match $openPattern) { $in = $true; continue }
         continue
       }
-      if ($l -match '^\`\`\`\s*$') { break }
+      if ($l -match $closePattern) { break }
       $buf.Add($l)
     }
     if ($buf.Count -gt 0) { return ($buf -join "`n") }
@@ -98,5 +101,5 @@ foreach ($m in $manifests) {
 }
 
 $json = $index | ConvertTo-Json -Depth 10
-Set-Content -LiteralPath $OutFile -Value $json -Encoding utf8NoBOM
+Set-Content -LiteralPath $OutFile -Value $json -Encoding UTF8
 Write-Host "Index written: $OutFile ($($manifests.Count) skills)"

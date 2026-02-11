@@ -54,3 +54,47 @@ All of these scripts use network, so when running in the sandbox, request escala
 - Git fallback tries HTTPS first, then SSH.
 - The skills at https://github.com/openai/skills/tree/main/skills/.system are preinstalled, so no need to help users install those. If they ask, just explain this. If they insist, you can download and overwrite.
 - Installed annotations come from `$CODEX_HOME/skills`.
+
+```skill-manifest
+{
+  "schema_version": "2.0",
+  "id": "skill-installer",
+  "version": "1.0.0",
+  "capabilities": ["skill-install", "skill-list"],
+  "effects": ["net.fetch", "fs.write", "proc.exec"],
+  "operations": {
+    "list-curated": {
+      "description": "List available curated skills with installed annotations.",
+      "input": {
+        "format": { "type": "string", "required": false, "default": "text", "description": "Output format: text or json" }
+      },
+      "output": {
+        "description": "List of curated skills with install status",
+        "fields": { "skills": "array of {name, installed}" }
+      },
+      "entrypoints": {
+        "unix": ["python3", "scripts/list-curated-skills.py", "--format", "{format}"],
+        "windows": ["python", "scripts/list-curated-skills.py", "--format", "{format}"]
+      }
+    },
+    "install": {
+      "description": "Install a skill from GitHub repo path.",
+      "input": {
+        "repo": { "type": "string", "required": true, "description": "GitHub owner/repo" },
+        "path": { "type": "string", "required": true, "description": "Path to skill within repo" }
+      },
+      "output": {
+        "description": "Installed skill path",
+        "fields": { "installed_path": "string" }
+      },
+      "entrypoints": {
+        "unix": ["python3", "scripts/install-skill-from-github.py", "--repo", "{repo}", "--path", "{path}"],
+        "windows": ["python", "scripts/install-skill-from-github.py", "--repo", "{repo}", "--path", "{path}"]
+      }
+    }
+  },
+  "stdout_contract": {
+    "last_line_json": false
+  }
+}
+```

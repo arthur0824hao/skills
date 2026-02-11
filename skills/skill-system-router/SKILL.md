@@ -136,3 +136,42 @@ Uses tables from `skill-system-postgres`:
 - `skill_system.policy_profiles` — effect allowlists
 - `skill_system.runs` — execution records
 - `skill_system.run_events` — step-level logs
+
+```skill-manifest
+{
+  "schema_version": "2.0",
+  "id": "skill-system-router",
+  "version": "1.0.0",
+  "capabilities": ["skill-discover", "skill-execute", "skill-chain", "index-rebuild"],
+  "effects": ["fs.read", "fs.write", "proc.exec", "db.read", "db.write"],
+  "operations": {
+    "rebuild-index": {
+      "description": "Regenerate skills-index.json by scanning all skill manifests.",
+      "input": {},
+      "output": {
+        "description": "Index file path and skill count",
+        "fields": { "file": "string", "skill_count": "integer" }
+      },
+      "entrypoints": {
+        "unix": ["bash", "scripts/build-index.sh"],
+        "windows": ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\\build-index.ps1"]
+      }
+    },
+    "bootstrap": {
+      "description": "Embed skill-system into project AGENTS.md (first run only).",
+      "input": {},
+      "output": {
+        "description": "Path to updated AGENTS.md",
+        "fields": { "agents_md_path": "string" }
+      },
+      "entrypoints": {
+        "agent": "Follow scripts/bootstrap.md procedure"
+      }
+    }
+  },
+  "stdout_contract": {
+    "last_line_json": false,
+    "note": "rebuild-index prints summary to stdout; bootstrap is agent-executed."
+  }
+}
+```

@@ -354,3 +354,47 @@ After testing the skill, users may request improvements. Often this happens righ
 2. Notice struggles or inefficiencies
 3. Identify how SKILL.md or bundled resources should be updated
 4. Implement changes and test again
+
+```skill-manifest
+{
+  "schema_version": "2.0",
+  "id": "skill-creator",
+  "version": "1.0.0",
+  "capabilities": ["skill-create", "skill-validate", "skill-package"],
+  "effects": ["fs.read", "fs.write", "proc.exec"],
+  "operations": {
+    "init": {
+      "description": "Initialize a new skill directory with SKILL.md template and resource folders.",
+      "input": {
+        "skill_name": { "type": "string", "required": true, "description": "Name for the new skill" },
+        "output_dir": { "type": "string", "required": false, "description": "Directory to create skill in" }
+      },
+      "output": {
+        "description": "Path to created skill directory",
+        "fields": { "path": "string" }
+      },
+      "entrypoints": {
+        "unix": ["python3", "scripts/init_skill.py", "{skill_name}", "--path", "{output_dir}"],
+        "windows": ["python", "scripts/init_skill.py", "{skill_name}", "--path", "{output_dir}"]
+      }
+    },
+    "package": {
+      "description": "Validate and package a skill into a distributable .skill file.",
+      "input": {
+        "skill_path": { "type": "string", "required": true, "description": "Path to skill folder" }
+      },
+      "output": {
+        "description": "Path to .skill package file",
+        "fields": { "package_path": "string" }
+      },
+      "entrypoints": {
+        "unix": ["python3", "scripts/package_skill.py", "{skill_path}"],
+        "windows": ["python", "scripts/package_skill.py", "{skill_path}"]
+      }
+    }
+  },
+  "stdout_contract": {
+    "last_line_json": false
+  }
+}
+```
